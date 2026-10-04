@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>نظام إدارة شركة العطاء - المركبات والموظفين</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0f172a; --panel:#1e293b; --panel2:#334155;
+  --accent:#f59e0b; --gold:#fbbf24; --ink:#f1f5f9;
+  --muted:#94a3b8; --ok:#10b981; --warn:#ef4444; --info:#3b82f6;
+  --border:#475569;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{font-family:'Segoe UI','Tahoma',Arial,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+body{padding:8px}
+header{background:linear-gradient(135deg,#1e293b,#0f172a);border-bottom:3px solid var(--accent);padding:14px;border-radius:10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+header h1{color:var(--gold);font-size:22px}
+header .sub{color:var(--muted);font-size:13px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{width:48px;height:48px;background:linear-gradient(135deg,var(--accent),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#0f172a;font-size:20px}
+.session-info{background:var(--panel2);padding:8px 12px;border-radius:6px;font-size:12px}
+.session-info b{color:var(--gold)}
+
+.tabs{display:flex;gap:4px;margin-bottom:10px;overflow-x:auto;flex-wrap:wrap}
+.tab{background:var(--panel);color:var(--ink);padding:10px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--border);font-size:13px;font-weight:600;white-space:nowrap}
+.tab.active{background:var(--accent);color:#0f172a;border-color:var(--accent)}
+.tab:hover:not(.active){background:var(--panel2)}
+
+.panel{background:var(--panel);border-radius:10px;padding:14px;border:1px solid var(--border);margin-bottom:10px}
+.panel h2{color:var(--gold);margin-bottom:10px;font-size:18px;border-bottom:2px solid var(--accent);padding-bottom:8px}
+
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:10px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:4px;font-weight:600}
+input,select,textarea{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--border);padding:9px;border-radius:6px;font-size:13px;font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:60px}
+
+.btn{background:var(--accent);color:#0f172a;border:none;padding:9px 16px;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;transition:.2s}
+.btn:hover{background:var(--gold);transform:translateY(-1px)}
+.btn.secondary{background:var(--info);color:#fff}
+.btn.danger{background:var(--warn);color:#fff}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.small{padding:5px 10px;font-size:11px}
+
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}
+th{background:var(--accent);color:#0f172a;padding:8px;text-align:right;font-weight:700}
+td{padding:7px;border-bottom:1px solid var(--border);color:var(--ink)}
+tr:hover td{background:var(--panel2)}
+tr.expired td{background:rgba(239,68,68,.18)}
+tr.expiring td{background:rgba(245,158,11,.18)}
+
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.badge.ok{background:var(--ok);color:#fff}
+.badge.warn{background:var(--warn);color:#fff}
+.badge.info{background:var(--info);color:#fff}
+.badge.gold{background:var(--gold);color:#0f172a}
+
+.alert{background:rgba(239,68,68,.18);border-right:4px solid var(--warn);padding:10px;border-radius:6px;margin:8px 0;color:#fff}
+.alert.warn{background:rgba(245,158,11,.18);border-right-color:var(--accent)}
+.alert.ok{background:rgba(16,185,129,.18);border-right-color:var(--ok)}
+
+.login-screen{display:flex;justify-content:center;align-items:center;min-height:80vh}
+.login-box{background:var(--panel);padding:30px;border-radius:14px;width:min(420px,94%);border:2px solid var(--accent)}
+.login-box h1{color:var(--gold);margin-bottom:10px;text-align:center}
+.login-box .logo-big{width:80px;height:80px;background:linear-gradient(135deg,var(--accent),var(--gold));border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold;color:#0f172a;font-size:32px;margin:0 auto 15px}
+
+.check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:8px}
+.check-grid label{display:flex;align-items:center;gap:6px;padding:8px;background:var(--bg);border-radius:6px;border:1px solid var(--border);cursor:pointer;color:var(--ink);font-size:12px}
+.check-grid input[type=checkbox]{width:auto;margin:0}
+
+.info-box{background:var(--panel2);padding:10px;border-radius:6px;font-size:12px;line-height:1.7;border-right:4px solid var(--info);margin-top:10px;white-space:pre-line}
+
+.hidden{display:none!important}
+.muted{color:var(--muted);font-size:11px}
+
+@media (max-width:768px){
+  header h1{font-size:18px}
+  .tab{padding:8px 10px;font-size:12px}
+  .panel{padding:10px}
+  th,td{padding:5px;font-size:11px}
+  .row{grid-template-columns:1fr 1fr}
+}
+@media (max-width:480px){
+  .row{grid-template-columns:1fr}
+  table{font-size:10px}
+}
+
+#printArea{display:none}
+</style>
+</head>
+<body>
+
+<!-- شاشة تسجيل الدخول -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <div class="logo-big">ع</div>
+    <h1>شركة العطاء</h1>
+    <p class="muted" style="text-align:center;margin-bottom:20px">نظام إدارة المركبات والموظفين</p>
+    <div class="row">
+      <div><label>اسم المستخدم</label><input id="loginUser" placeholder="مثال: admin أو manager1"></div>
+      <div><label>الرمز السري</label><input id="loginPass" type="password" placeholder="الرمز"></div>
+    </div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn" onclick="doLogin()">🔐 دخول</button>
+      <button class="btn secondary" onclick="showDemoAccounts()">📋 الحسابات الافتراضية</button>
+    </div>
+    <div id="loginMsg"></div>
+    <div class="info-box" style="margin-top:15px">
+⚠️ تنبيه مهم:
+هذا النظام يحفظ البيانات محلياً في متصفحك (localStorage).
+لمشاركة البيانات بين عدة أجهزة أو مدراء في نفس الوقت،
+تحتاج إلى تشغيل النسخة على خادم (مثل Firebase أو GitHub Pages).
+راجع تبويب "الإعدادات السحابية" بعد الدخول.
+    </div>
+  </div>
+</div>
+
+<!-- الواجهة الرئيسية -->
+<div id="mainApp" class="hidden">
+<header>
+  <div class="brand">
+    <div class="logo">ع</div>
+    <div>
+      <h1>شركة العطاء - نظام الإدارة</h1>
+      <div class="sub">إدارة المركبات • السائقين • الموظفين • الرحلات</div>
+    </div>
+  </div>
+  <div class="session-info">
+    👤 <b id="currUser">--</b> | 🏷️ <b id="currRole">--</b>
+    <button class="btn small danger" onclick="doLogout()" style="margin-right:8px">خروج</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('dash')">📊 لوحة التحكم</div>
+  <div class="tab" onclick="showTab('vehicles')">🚛 المركبات</div>
+  <div class="tab" onclick="showTab('drivers')">👨‍✈️ السائقين</div>
+  <div class="tab" onclick="showTab('employees')">👥 الموظفين</div>
+  <div class="tab" onclick="showTab('warnings')">⚠️ التنبيهات والغرامات</div>
+  <div class="tab" onclick="showTab('checklist')">✅ قائمة الفحص</div>
+  <div class="tab" onclick="showTab('trips')">🛣️ الرحلات</div>
+  <div class="tab" onclick="showTab('cloud')">☁️ الإعدادات</div>
+  <div class="tab" onclick="showTab('excel')">📑 إكسل</div>
+</div>
+
+<!-- لوحة التحكم -->
+<div id="tab-dash" class="panel">
+  <h2>📊 لوحة التحكم الرئيسية</h2>
+  <div class="row" id="dashStats"></div>
+  <div id="dashAlerts"></div>
+  <div id="dashExpiring"></div>
+</div>
+
+<!-- المركبات -->
+<div id="tab-vehicles" class="panel hidden">
+  <h2>🚛 إدارة المركبات</h2>
+  <div class="row">
+    <div><label>القسم التابع له</label>
+      <select id="vDept">
+        <option value="ALS">ALS - خدمات لوجستية</option>
+        <option value="D&M">D&M - صيانة وتشغيل</option>
+        <option value="OPS">OPS - عمليات</option>
+        <option value="HR">HR - موارد بشرية</option>
+      </select>
+    </div>
+    <div><label>نوع المركبة</label>
+      <select id="vType">
+        <option>كرين (Crane)</option><option>بيك اب (Pickup)</option>
+        <option>هاي آب هياب (Hiab)</option><option>هايس (Hiace)</option>
+        <option>رافعة شوكية (Forklift)</option><option>تريلة (Trailer)</option>
+        <option>كنتر (Container)</option><option>فاكيوم (Vacuum)</option>
+        <option>SoftSkin - Toyota Pickup</option>
+      </select>
+    </div>
+    <div><label>رقم اللوحة (Plate No.)</label><input id="vPlate"></div>
+    <div><label>رقم المركبة (Vehicle No.)</label><input id="vNumber"></div>
+    <div><label>مالك المركبة (Owner)</label><input id="vOwner" placeholder="مثال: شركة الآلاء"></div>
+    <div><label>الجهة المسجلة</label>
+      <select id="vReg">
+        <option>أربيل</option><option>البصرة</option><option>بغداد</option><option>كركوك</option><option>عمان</option>
+      </select>
+    </div>
+    <div><label>الحالة الأمنية (SOC)</label>
+      <select id="vSoc"><option>Yes</option><option>No</option><option>Pending</option></select>
+    </div>
+    <div><label>السائق المعين</label><input id="vDriverName" placeholder="اسم السائق"></div>
+    <div><label>تاريخ بدء الصلاحية</label><input id="vValidFrom" type="date"></div>
+    <div><label>تاريخ الانتهاء</label><input id="vExpiry" type="date"></div>
+    <div><label>رقم الموظف (مرتبط)</label><input id="vEmpNumber"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="saveVehicle()">💾 إضافة / تحديث</button>
+    <button class="btn secondary" onclick="resetVehicle()">🆕 جديد</button>
+  </div>
+  <div id="vehicleList"></div>
+</div>
+
+<!-- السائقين -->
+<div id="tab-drivers" class="panel hidden">
+  <h2>👨‍✈️ إدارة السائقين</h2>
+  <div class="row">
+    <div><label>اسم السائق</label><input id="dName"></div>
+    <div><label>رقم الموظف</label><input id="dEmpNo"></div>
+    <div><label>رقم الجواز</label><input id="dPassport"></div>
+    <div><label>GIN Number</label><input id="dGin"></div>
+    <div><label>رقم الموبايل</label><input id="dMobile" placeholder="+964..."></div>
+    <div><label>كلمة المرور</label><input id="dPassword" type="password"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="saveDriver()">💾 حفظ</button>
+    <button class="btn secondary" onclick="resetDriver()">🆕 جديد</button>
+  </div>
+  <div id="driverList"></div>
+</div>
+
+<!-- الموظفين -->
+<div id="tab-employees" class="panel hidden">
+  <h2>👥 إدارة الموظفين (التفاصيل الكاملة)</h2>
+  <div class="row">
+    <div><label>اسم الموظف</label><input id="eName"></div>
+    <div><label>رقم الموظف</label><input id="eNumber"></div>
+    <div><label>GIN Number</label><input id="eGin"></div>
+    <div><label>كلمة المرور</label><input id="ePassword" type="password"></div>
+    <div><label>رقم الموبايل</label><input id="eMobile" placeholder="+964..."></div>
+    <div><label>القسم</label>
+      <select id="eDept">
+        <option>ALS</option><option>D&M</option><option>OPS</option><option>HR</option>
+      </select>
+    </div>
+    <div><label>المنصب / الوظيفة</label><input id="eJob" placeholder="سائق / فني / مشرف..."></div>
+  </div>
+  <h3 style="color:var(--gold);margin:10px 0 6px">📄 الوثائق والتراخيص</h3>
+  <div class="row">
+    <div><label>رقم جواز القيادة</label><input id="eDrivingNo"></div>
+    <div><label>تاريخ بدء جواز القيادة</label><input id="eDrivingStart" type="date"></div>
+    <div><label>تاريخ انتهاء جواز القيادة</label><input id="eDrivingEnd" type="date"></div>
+    <div><label>رقم جواز السلامة</label><input id="eSafetyNo"></div>
+    <div><label>تاريخ بدء جواز السلامة</label><input id="eSafetyStart" type="date"></div>
+    <div><label>تاريخ انتهاء جواز السلامة</label><input id="eSafetyEnd" type="date"></div>
+    <div><label>تاريخ الفحص الطبي</label><input id="eMedicalDate" type="date"></div>
+    <div><label>صلاحية الفحص الطبي</label><input id="eMedicalExpiry" type="date"></div>
+    <div><label>الشهادات المأخوذة</label><textarea id="eCertificates" placeholder="مثال: HSE, First Aid, Forklift Operator..."></textarea></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="saveEmployee()">💾 حفظ</button>
+    <button class="btn secondary" onclick="resetEmployee()">🆕 جديد</button>
+  </div>
+  <div id="employeeList"></div>
+</div>
+
+<!-- التنبيهات والغرامات -->
+<div id="tab-warnings" class="panel hidden">
+  <h2>⚠️ التنبيهات والغرامات</h2>
+  <h3 style="color:var(--gold);margin-bottom:8px">إضافة تنبيه لسائق</h3>
+  <div class="row">
+    <div><label>اختر السائق</label><select id="wDriver"></select></div>
+    <div><label>نوع التنبيه</label>
+      <select id="wType">
+        <option value="1st">التنبيه الأول</option>
+        <option value="2nd">التنبيه الثاني</option>
+        <option value="speed">مخالفة سرعة (50$)</option>
+        <option value="missing">نقص في المستلزمات (100$ لكل)</option>
+      </select>
+    </div>
+    <div><label>التفاصيل</label><input id="wDetails" placeholder="وصف المخالفة أو التنبيه"></div>
+    <div><label>المبلغ ($)</label><input id="wAmount" type="number" value="0"></div>
+    <div><label>التاريخ</label><input id="wDate" type="date"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="addWarning()">⚠️ تسجيل</button>
+  </div>
+  <div class="info-box">💰 <b>قواعد الغرامات:</b>
+التنبيه الأول: تحذير كتابي فقط
+التنبيه الثاني: تحذير مع إيقاف مؤقت
+السرعة: 50$ لكل مخالفة
+نقص المستلزمات: 100$ لكل بند ناقص (طفاية كيبل، مثلثات، إسعافات أولية، سفايف، كيبل سحب، جيطلات باتري)
+  </div>
+  <div id="warningList"></div>
+</div>
+
+<!-- قائمة الفحص -->
+<div id="tab-checklist" class="panel hidden">
+  <h2>✅ قائمة الفحص اليومي للمركبة</h2>
+  <div class="row">
+    <div><label>اختر المركبة</label><select id="cVehicle"></select></div>
+    <div><label>السائق المبلّغ</label><input id="cDriver"></div>
+    <div><label>تاريخ الفحص</label><input id="cDate" type="date"></div>
+  </div>
+  <h3 style="color:var(--gold);margin:10px 0 6px">المستلزمات الواجب توفرها</h3>
+  <div class="check-grid" id="checkItems"></div>
+  <h3 style="color:var(--gold);margin:10px 0 6px">أخرى للفحص</h3>
+  <div class="check-grid" id="checkExtras"></div>
+  <div class="row" style="margin-top:10px">
+    <div style="grid-column:1/-1"><label>ملاحظات</label><textarea id="cNotes"></textarea></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="saveChecklist()">💾 حفظ الفحص</button>
+    <button class="btn danger" onclick="calcFine()">💰 احتساب الغرامة</button>
+  </div>
+  <div id="checkResult"></div>
+  <div id="checklistHistory"></div>
+</div>
+
+<!-- الرحلات -->
+<div id="tab-trips" class="panel hidden">
+  <h2>🛣️ إدارة الرحلات</h2>
+  <div class="row">
+    <div><label>المركبة</label><select id="tVehicle"></select></div>
+    <div><label>السائق</label><select id="tDriver"></select></div>
+    <div><label>وجهة الانطلاق</label>
+      <select id="tFrom">
+        <option>البصرة</option><option>بغداد</option><option>كركوك</option><option>أربيل</option><option>عكاز</option>
+      </select>
+    </div>
+    <div><label>وجهة الوصول</label>
+      <select id="tTo">
+        <option>بغداد</option><option>البصرة</option><option>كركوك</option><option>أربيل</option><option>عكاز</option>
+      </select>
+    </div>
+    <div><label>تاريخ الرحلة</label><input id="tDate" type="date"></div>
+    <div><label>وقت الانطلاق</label><input id="tTime" type="time"></div>
+    <div><label>المسافة (كم)</label><input id="tDistance" type="number"></div>
+    <div><label>الحمولة / البيان</label><input id="tCargo"></div>
+    <div><label>الوقود (لتر)</label><input id="tFuel" type="number"></div>
+    <div><label>الملاحظات</label><input id="tNotes"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="saveTrip()">💾 تسجيل الرحلة</button>
+  </div>
+  <div id="tripList"></div>
+</div>
+
+<!-- الإعدادات السحابية -->
+<div id="tab-cloud" class="panel hidden">
+  <h2>☁️ الإعدادات السحابية والمشاركة</h2>
+  <div class="alert warn">
+⚠️ النسخة الحالية تحفظ البيانات محلياً فقط في متصفحك. لاستخدام النظام من عدة أجهزة أو عدة مدراء في نفس الوقت، تحتاج إلى نشره على الإنترنت.
+  </div>
+  <h3 style="color:var(--gold);margin:10px 0 6px">خيارات الاستضافة المجانية</h3>
+  <div class="info-box">
+📌 <b>1. نشر على GitHub Pages (مجاني)</b>
+- أنشئ حساباً على github.com
+- أنشئ repository جديد باسم alataa-fleet
+- ارفع ملف alataa_fleet.html
+- اذهب إلى Settings → Pages → اختر main → Save
+- ستحصل على رابط مثل: https://username.github.io/alataa-fleet
+- شاركه مع المدراء
+
+📌 <b>2. نشر على Netlify (أسهل)</b>
+- اذهب إلى app.netlify.com/drop
+- اسحب وأفلت مجلد alataa_app
+- ستحصل على رابط خلال ثوانٍ
+
+📌 <b>3. مزامنة البيانات بين الأجهزة (Firebase)</b>
+- أنشئ مشروع Firebase مجاني
+- فعّل Firestore Database
+- استبدل دوال save/load الحالية بكود Firestore
+- سأضيف لك الكود إذا أردت
+  </div>
+
+  <h3 style="color:var(--gold);margin:14px 0 6px">🔧 إدارة المدراء</h3>
+  <div class="row">
+    <div><label>اسم المستخدم للمدير الجديد</label><input id="newMgrUser"></div>
+    <div><label>الرمز السري</label><input id="newMgrPass" type="password"></div>
+    <div><label>الصلاحية</label>
+      <select id="newMgrRole">
+        <option value="admin">مدير عام (كامل الصلاحيات)</option>
+        <option value="manager">مدير قسم</option>
+        <option value="viewer">مشاهد فقط</option>
+      </select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn" onclick="addManager()">➕ إضافة مدير</button>
+  </div>
+  <div id="managerList"></div>
+</div>
+
+<!-- إكسل -->
+<div id="tab-excel" class="panel hidden">
+  <h2>📑 استيراد / تصدير إكسل</h2>
+  <div class="info-box">
+📊 يمكنك تصدير جميع البيانات إلى ملفات Excel لاستخدامها على الكمبيوتر،
+أو استيراد ملف Excel موجود لديك مثل الجدول المرفق في الصورة.
+  </div>
+  <div class="btn-row">
+    <button class="btn ok" onclick="exportVehiclesExcel()">📥 تصدير المركبات</button>
+    <button class="btn ok" onclick="exportEmployeesExcel()">📥 تصدير الموظفين</button>
+    <button class="btn ok" onclick="exportDriversExcel()">📥 تصدير السائقين</button>
+    <button class="btn ok" onclick="exportWarningsExcel()">📥 تصدير التنبيهات</button>
+    <button class="btn ok" onclick="exportTripsExcel()">📥 تصدير الرحلات</button>
+    <button class="btn ok" onclick="exportAllExcel()">📦 تصدير الكل (كل التبويبات)</button>
+  </div>
+  <h3 style="color:var(--gold);margin:14px 0 6px">📤 استيراد ملف إكسل</h3>
+  <div class="row">
+    <div><label>اختر نوع البيانات</label>
+      <select id="importType">
+        <option value="vehicles">المركبات</option>
+        <option value="employees">الموظفين</option>
+        <option value="drivers">السائقين</option>
+      </select>
+    </div>
+    <div><label>اختر ملف .xlsx</label><input id="importFile" type="file" accept=".xlsx,.xls,.csv"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn secondary" onclick="importExcel()">📤 استيراد البيانات</button>
+  </div>
+  <div id="importMsg"></div>
+</div>
+
+</div><!-- /mainApp -->
+
+<script>
+/* ========================= البيانات الأساسية ========================= */
+const CHECKLIST_ITEMS = [
+  {key:'extinguisher',label:'طفاية حريق',fine:100},
+  {key:'towCable',label:'كيبل سحب',fine:100},
+  {key:'jumperCables',label:'جيطلات باتري (كيبل بطارية)',fine:100},
+  {key:'triangles',label:'مثلثات تحذير',fine:100},
+  {key:'firstAid',label:'حقيبة إسعافات أولية',fine:100},
+  {key:'vests',label:'سفايف (سترات سلامة)',fine:100},
+  {key:'spareTires',label:'إطار احتياطي',fine:100}
+];
+const CHECK_EXTRAS = [
+  {key:'oil',label:'مستوى الزيت'},
+  {key:'water',label:'مستوى الماء'},
+  {key:'brakes',label:'الفرامل'},
+  {key:'lights',label:'الأضوية'},
+  {key:'tires',label:'الإطارات'},
+  {key:'horn',label:'البوق'},
+  {key:'mirrors',label:'المرايا'},
+  {key:'wipers',label:'المسّاحات'}
+];
+
+/* ========================= الحالة والتخزين ========================= */
+let state = loadState();
+
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem('alataa_state')||'{}');
+    return {
+      managers: s.managers || [
+        {user:'admin',pass:'admin123',role:'admin',name:'المدير العام'},
+        {user:'manager1',pass:'mgr123',role:'manager',name:'مدير قسم ALS'},
+        {user:'manager2',pass:'mgr456',role:'manager',name:'مدير قسم D&M'}
+      ],
+      vehicles: s.vehicles || [
+        {id:1,dept:'ALS',type:'SoftSkin - Toyota Pickup',plate:'20057',number:'ALS-20057',owner:'Al Alaa',reg:'أربيل',soc:'Yes',driver:'Khalid Roshan',validFrom:'2025-08-11',expiry:'2026-08-11',empNumber:'1900111207'},
+        {id:2,dept:'D&M',type:'SoftSkin - Toyota Pickup',plate:'27548',number:'D&M-27548',owner:'al alaaa',reg:'أربيل',soc:'Yes',driver:'Ahmed Azam - still in service',validFrom:'2026-02-03',expiry:'2027-02-03',empNumber:'1903397966'},
+        {id:3,dept:'ALS',type:'SoftSkin - Toyota Pickup',plate:'25499',number:'ALS-25499',owner:'Al Alaa',reg:'أربيل',soc:'Yes',driver:'Hussein Abd Ali',validFrom:'2026-01-24',expiry:'2027-01-24',empNumber:'1900080691'}
+      ],
+      drivers: s.drivers || [
+        {id:1,name:'Khalid Roshan',empNo:'1900111207',passport:'29085',gin:'G1234567',mobile:'+9647805012199',password:'--'},
+        {id:2,name:'Ahmed Azam',empNo:'1903397966',passport:'22705',gin:'G7654321',mobile:'+9647802396321',password:'--'},
+        {id:3,name:'Hussein Abd Ali',empNo:'1900080691',passport:'10426',gin:'G9876543',mobile:'+9647829492545',password:'--'}
+      ],
+      employees: s.employees || [],
+      warnings: s.warnings || [],
+      checklists: s.checklists || [],
+      trips: s.trips || []
+    };
+  }catch(e){return {}}
+}
+
+function saveState(){
+  localStorage.setItem('alataa_state',JSON.stringify(state));
+}
+function uid(){return Date.now()+Math.floor(Math.random()*1000)}
+
+/* ========================= الدخول والخروج ========================= */
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const m=state.managers.find(x=>x.user===u && x.pass===p);
+  if(!m){
+    document.getElementById('loginMsg').innerHTML='<div class="alert">❌ اسم المستخدم أو الرمز غير صحيح</div>';
+    return;
+  }
+  sessionStorage.setItem('alataa_session',JSON.stringify({user:u,role:m.role,name:m.name,loginAt:new Date().toISOString()}));
+  enterApp();
+}
+function doLogout(){
+  sessionStorage.removeItem('alataa_session');
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+function enterApp(){
+  const s=JSON.parse(sessionStorage.getItem('alataa_session')||'{}');
+  document.getElementById('currUser').textContent=s.name+' ('+s.user+')';
+  document.getElementById('currRole').textContent=s.role==='admin'?'مدير عام':s.role==='manager'?'مدير قسم':'مشاهد';
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  refreshAll();
+}
+function showDemoAccounts(){
+  let html='<div class="alert ok" style="text-align:right"><b>الحسابات الافتراضية للنظام:</b><br><br>';
+  state.managers.forEach(m=>{
+    html+=`👤 ${m.name}<br>اسم المستخدم: <b>${m.user}</b> | الرمز: <b>${m.pass}</b> | الصلاحية: <b>${m.role}</b><br><br>`;
+  });
+  html+='</div>';
+  document.getElementById('loginMsg').innerHTML=html;
+}
+
+/* ========================= التبويبات ========================= */
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(x=>x.classList.add('hidden'));
+  const btn=event&&event.target&&event.target.classList.contains('tab')?event.target:document.querySelector('.tab');
+  if(btn)btn.classList.add('active');
+  const map={dash:'tab-dash',vehicles:'tab-vehicles',drivers:'tab-drivers',employees:'tab-employees',warnings:'tab-warnings',checklist:'tab-checklist',trips:'tab-trips',cloud:'tab-cloud',excel:'tab-excel'};
+  document.getElementById(map[t]).classList.remove('hidden');
+  event&&event.target&&event.target.classList&&event.target.classList.contains('tab')&&event.target.classList.add('active');
+  refreshTab(t);
+}
+function refreshTab(t){
+  if(t==='dash')renderDash();
+  else if(t==='vehicles')renderVehicles();
+  else if(t==='drivers')renderDrivers();
+  else if(t==='employees')renderEmployees();
+  else if(t==='warnings')renderWarnings();
+  else if(t==='checklist')renderChecklist();
+  else if(t==='trips')renderTrips();
+  else if(t==='cloud')renderManagers();
+}
+function refreshAll(){refreshTab('dash')}
+
+/* ========================= لوحة التحكم ========================= */
+function daysBetween(d1,d2){
+  const a=new Date(d1),b=new Date(d2);
+  return Math.ceil((b-a)/(1000*60*60*24));
+}
+function isExpiringSoon(d){
+  if(!d)return -1;
+  const days=daysBetween(new Date(),d);
+  return days;
+}
+function renderDash(){
+  const totalV=state.vehicles.length;
+  const totalD=state.drivers.length;
+  const totalE=state.employees.length;
+  const totalW=state.warnings.length;
+  const totalT=state.trips.length;
+  let totalFine=0;
+  state.warnings.forEach(w=>totalFine+=+w.amount||0);
+  document.getElementById('dashStats').innerHTML=`
+    <div class="panel" style="text-align:center"><div class="muted">المركبات</div><div style="font-size:28px;color:var(--gold);font-weight:bold">${totalV}</div></div>
+    <div class="panel" style="text-align:center"><div class="muted">السائقين</div><div style="font-size:28px;color:var(--gold);font-weight:bold">${totalD}</div></div>
+    <div class="panel" style="text-align:center"><div class="muted">الموظفين</div><div style="font-size:28px;color:var(--gold);font-weight:bold">${totalE}</div></div>
+    <div class="panel" style="text-align:center"><div class="muted">التنبيهات</div><div style="font-size:28px;color:var(--warn);font-weight:bold">${totalW}</div></div>
+    <div class="panel" style="text-align:center"><div class="muted">الرحلات</div><div style="font-size:28px;color:var(--info);font-weight:bold">${totalT}</div></div>
+    <div class="panel" style="text-align:center"><div class="muted">إجمالي الغرامات ($)</div><div style="font-size:28px;color:var(--ok);font-weight:bold">${totalFine}</div></div>`;
+
+  let alertsHtml='';
+  let expHtml='<h3 style="color:var(--gold);margin-top:14px">⏰ وثائق قاربت على الانتهاء (خلال 30 يوم)</h3>';
+  let hasExp=false;
+
+  state.vehicles.forEach(v=>{
+    const d=isExpiringSoon(v.expiry);
+    if(d<0)alertsHtml+=`🔴 المركبة <b>${v.plate}</b> منتهية الصلاحية منذ ${-d} يوم<br>`;
+    else if(d<=30){hasExp=true;expHtml+=`🚛 <b>${v.plate}</b> (${v.type}) - متبقي <b>${d}</b> يوم - انتهاء ${v.expiry}<br>`;}
+  });
+  state.drivers.forEach(dr=>{
+    const e=state.employees.find(x=>x.number===dr.empNo);
+    if(e){
+      if(e.drivingEnd){const dd=isExpiringSoon(e.drivingEnd);if(dd<0)alertsHtml+=`🔴 جواز قيادة <b>${e.name}</b> منتهي<br>`;else if(dd<=30){hasExp=true;expHtml+=`📄 جواز قيادة <b>${e.name}</b> - متبقي ${dd} يوم<br>`;}}
+      if(e.safetyEnd){const dd=isExpiringSoon(e.safetyEnd);if(dd<0)alertsHtml+=`🔴 جواز سلامة <b>${e.name}</b> منتهي<br>`;else if(dd<=30){hasExp=true;expHtml+=`📄 جواز سلامة <b>${e.name}</b> - متبقي ${dd} يوم<br>`;}}
+      if(e.medicalExpiry){const dd=isExpiringSoon(e.medicalExpiry);if(dd<0)alertsHtml+=`🔴 فحص طبي <b>${e.name}</b> منتهي<br>`;else if(dd<=30){hasExp=true;expHtml+=`🏥 فحص طبي <b>${e.name}</b> - متبقي ${dd} يوم<br>`;}}
+    }
+  });
+  document.getElementById('dashAlerts').innerHTML=alertsHtml?`<div class="alert"><b>⚠️ تنبيهات عاجلة</b><br>${alertsHtml}</div>`:'<div class="alert ok">✅ لا توجد تنبيهات عاجلة</div>';
+  document.getElementById('dashExpiring').innerHTML=hasExp?`<div class="alert warn">${expHtml}</div>`:'';
+}
+
+/* ========================= المركبات ========================= */
+function saveVehicle(){
+  const v={
+    id:uid(),
+    plate:val('vPlate'),number:val('vNumber'),type:val('vType'),
+    dept:val('vDept'),owner:val('vOwner'),reg:val('vReg'),
+    soc:val('vSoc'),driver:val('vDriverName'),
+    validFrom:val('vValidFrom'),expiry:val('vExpiry'),empNumber:val('vEmpNumber')
+  };
+  if(!v.plate){alert('رقم اللوحة مطلوب');return;}
+  state.vehicles.push(v);saveState();
+  resetVehicle();renderVehicles();
+  alert('✅ تمت إضافة المركبة بنجاح');
+}
+function resetVehicle(){
+  ['vPlate','vNumber','vOwner','vDriverName','vEmpNumber','vValidFrom','vExpiry'].forEach(id=>document.getElementById(id).value='');
+}
+function renderVehicles(){
+  let html='<table><thead><tr><th>#</th><th>اللوحة</th><th>رقم المركبة</th><th>النوع</th><th>القسم</th><th>المالك</th><th>السائق</th><th>الانتهاء</th><th>الحالة</th></tr></thead><tbody>';
+  state.vehicles.forEach((v,i)=>{
+    const d=isExpiringSoon(v.expiry);
+    let cls='',badge='<span class="badge ok">ساري</span>';
+    if(d<0){cls='expired';badge='<span class="badge warn">منتهي</span>';}
+    else if(d<=30){cls='expiring';badge=`<span class="badge gold">${d} يوم</span>`;}
+    html+=`<tr class="${cls}"><td>${i+1}</td><td><b>${v.plate}</b></td><td>${v.number||'-'}</td><td>${v.type}</td><td><span class="badge info">${v.dept}</span></td><td>${v.owner||'-'}</td><td>${v.driver||'-'}</td><td>${v.expiry||'-'}</td><td>${badge}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('vehicleList').innerHTML=html;
+}
+function val(id){return document.getElementById(id).value.trim()}
+
+/* ========================= السائقين ========================= */
+function saveDriver(){
+  const d={id:uid(),name:val('dName'),empNo:val('dEmpNo'),passport:val('dPassport'),gin:val('dGin'),mobile:val('dMobile'),password:val('dPassword')};
+  if(!d.name){alert('اسم السائق مطلوب');return;}
+  state.drivers.push(d);saveState();
+  resetDriver();renderDrivers();
+  alert('✅ تمت إضافة السائق');
+}
+function resetDriver(){
+  ['dName','dEmpNo','dPassport','dGin','dMobile','dPassword'].forEach(id=>document.getElementById(id).value='');
+}
+function renderDrivers(){
+  let html='<table><thead><tr><th>#</th><th>الاسم</th><th>رقم الموظف</th><th>GIN</th><th>الجواز</th><th>الموبايل</th><th>كلمة المرور</th></tr></thead><tbody>';
+  state.drivers.forEach((d,i)=>{
+    html+=`<tr><td>${i+1}</td><td><b>${d.name}</b></td><td>${d.empNo}</td><td>${d.gin||'-'}</td><td>${d.passport||'-'}</td><td>${d.mobile||'-'}</td><td>${d.password?'••••':'—'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('driverList').innerHTML=html;
+
+  // تعبئة قائمة السائقين في التنبيهات والرحلات
+  const opts=state.drivers.map(d=>`<option value="${d.name}">${d.name}</option>`).join('');
+  document.getElementById('wDriver').innerHTML=opts;
+  document.getElementById('tDriver').innerHTML=opts;
+}
+
+/* ========================= الموظفين ========================= */
+function saveEmployee(){
+  const e={
+    id:uid(),name:val('eName'),number:val('eNumber'),gin:val('eGin'),
+    password:val('ePassword'),mobile:val('eMobile'),
+    dept:val('eDept'),job:val('eJob'),
+    drivingNo:val('eDrivingNo'),drivingStart:val('eDrivingStart'),drivingEnd:val('eDrivingEnd'),
+    safetyNo:val('eSafetyNo'),safetyStart:val('eSafetyStart'),safetyEnd:val('eSafetyEnd'),
+    medicalDate:val('eMedicalDate'),medicalExpiry:val('eMedicalExpiry'),
+    certificates:val('eCertificates')
+  };
+  if(!e.name){alert('اسم الموظف مطلوب');return;}
+  state.employees.push(e);saveState();
+  resetEmployee();renderEmployees();
+  alert('✅ تمت إضافة الموظف');
+}
+function resetEmployee(){
+  ['eName','eNumber','eGin','ePassword','eMobile','eJob','eDrivingNo','eDrivingStart','eDrivingEnd','eSafetyNo','eSafetyStart','eSafetyEnd','eMedicalDate','eMedicalExpiry','eCertificates'].forEach(id=>document.getElementById(id).value='');
+}
+function renderEmployees(){
+  let html='<table><thead><tr><th>#</th><th>الاسم</th><th>رقم</th><th>GIN</th><th>القسم</th><th>جواز قيادة</th><th>انتهاء</th><th>جواز سلامة</th><th>انتهاء</th><th>فحص طبي</th><th>شهادات</th></tr></thead><tbody>';
+  state.employees.forEach((e,i)=>{
+    const dD=isExpiringSoon(e.drivingEnd),dS=isExpiringSoon(e.safetyEnd),dM=isExpiringSoon(e.medicalExpiry);
+    let cls='',badgeD='<span class="badge ok">ساري</span>',badgeS='<span class="badge ok">ساري</span>',badgeM='<span class="badge ok">ساري</span>';
+    if(dD<0){cls='expired';badgeD='<span class="badge warn">منتهي</span>';}else if(dD<=30){cls='expiring';badgeD=`<span class="badge gold">${dD}د</span>`;}
+    if(dS<0)badgeS='<span class="badge warn">منتهي</span>';else if(dS<=30)badgeS=`<span class="badge gold">${dS}د</span>`;
+    if(dM<0)badgeM='<span class="badge warn">منتهي</span>';else if(dM<=30)badgeM=`<span class="badge gold">${dM}د</span>`;
+    html+=`<tr class="${cls}"><td>${i+1}</td><td><b>${e.name}</b><br><small class="muted">${e.job||''}</small></td><td>${e.number||'-'}</td><td>${e.gin||'-'}</td><td><span class="badge info">${e.dept}</span></td><td>${e.drivingNo||'-'}</td><td>${badgeD}</td><td>${e.safetyNo||'-'}</td><td>${badgeS}</td><td>${badgeM}</td><td>${e.certificates||'-'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('employeeList').innerHTML=html;
+}
+
+/* ========================= التنبيهات ========================= */
+function addWarning(){
+  const w={id:uid(),driver:val('wDriver'),type:val('wType'),details:val('wDetails'),amount:+val('wAmount')||0,date:val('wDate')||new Date().toISOString().slice(0,10)};
+  state.warnings.push(w);saveState();
+  ['wDetails','wAmount'].forEach(id=>document.getElementById(id).value='');
+  renderWarnings();
+  alert('✅ تم تسجيل التنبيه');
+}
+function renderWarnings(){
+  let html='<table><thead><tr><th>#</th><th>السائق</th><th>النوع</th><th>التفاصيل</th><th>المبلغ</th><th>التاريخ</th></tr></thead><tbody>';
+  state.warnings.forEach((w,i)=>{
+    let t='تنبيه أول';if(w.type==='2nd')t='<span class="badge warn">⚠️ تنبيه ثاني</span>';
+    else if(w.type==='speed')t='<span class="badge info">سرعة</span>';
+    else if(w.type==='missing')t='<span class="badge gold">نقص مستلزمات</span>';
+    html+=`<tr><td>${i+1}</td><td><b>${w.driver||'-'}</b></td><td>${t}</td><td>${w.details||'-'}</td><td>${w.amount?('$'+w.amount):'—'}</td><td>${w.date}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('warningList').innerHTML=state.warnings.length?html:'<div class="alert ok">✅ لا توجد تنبيهات مسجلة</div>';
+}
+
+/* ========================= قائمة الفحص ========================= */
+function renderChecklist(){
+  let h='';CHECKLIST_ITEMS.forEach(c=>{h+=`<label><input type="checkbox" data-key="${c.key}" data-fine="${c.fine}"> ${c.label} <span class="badge gold">$${c.fine}</span></label>`;});
+  document.getElementById('checkItems').innerHTML=h;
+  let h2='';CHECK_EXTRAS.forEach(c=>{h2+=`<label><input type="checkbox" data-key="${c.key}"> ${c.label}</label>`;});
+  document.getElementById('checkExtras').innerHTML=h2;
+
+  const opts=state.vehicles.map(v=>`<option value="${v.plate}">${v.plate} - ${v.type}</option>`).join('');
+  document.getElementById('cVehicle').innerHTML=opts;
+}
+function calcFine(){
+  let total=0,miss=[];
+  document.querySelectorAll('#checkItems input[type=checkbox]').forEach(cb=>{
+    if(!cb.checked){total+=+cb.dataset.fine;miss.push(cb.parentElement.textContent.trim().split('$')[0].trim());}
+  });
+  const msg=miss.length?`<div class="alert">💰 الغرامة المستحقة: <b>$${total}</b><br>📋 الناقص: ${miss.join('، ')}</div>`:'<div class="alert ok">✅ جميع المستلزمات متوفرة - لا توجد غرامة</div>';
+  document.getElementById('checkResult').innerHTML=msg;
+}
+function saveChecklist(){
+  const c={id:uid(),vehicle:val('cVehicle'),driver:val('cDriver'),date:val('cDate')||new Date().toISOString().slice(0,10),notes:val('cNotes')};
+  const chk={},ext={};
+  document.querySelectorAll('#checkItems input[type=checkbox]').forEach(cb=>chk[cb.dataset.key]=cb.checked);
+  document.querySelectorAll('#checkExtras input[type=checkbox]').forEach(cb=>ext[cb.dataset.key]=cb.checked);
+  c.items=chk;c.extras=ext;
+  let total=0;
+  for(let k in chk){if(!chk[k])total+=CHECKLIST_ITEMS.find(x=>x.key===k).fine;}
+  c.fine=total;
+  state.checklists.push(c);saveState();renderCheckHistory();
+  ['cNotes','cDate','cDriver'].forEach(id=>document.getElementById(id).value='');
+  alert('✅ تم حفظ الفحص'+(total?` - الغرامة: $${total}`:''));
+}
+function renderCheckHistory(){
+  let html='<h3 style="color:var(--gold);margin-top:14px">📜 سجل الفحوصات</h3><table><thead><tr><th>#</th><th>المركبة</th><th>السائق</th><th>التاريخ</th><th>الغرامة</th><th>ملاحظات</th></tr></thead><tbody>';
+  state.checklists.slice(-20).reverse().forEach((c,i)=>{
+    html+=`<tr><td>${i+1}</td><td>${c.vehicle}</td><td>${c.driver}</td><td>${c.date}</td><td>${c.fine?('$'+c.fine):'—'}</td><td>${c.notes||'-'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('checklistHistory').innerHTML=state.checklists.length?html:'';
+}
+
+/* ========================= الرحلات ========================= */
+function saveTrip(){
+  const t={id:uid(),vehicle:val('tVehicle'),driver:val('tDriver'),from:val('tFrom'),to:val('tTo'),date:val('tDate'),time:val('tTime'),distance:+val('tDistance')||0,cargo:val('tCargo'),fuel:+val('tFuel')||0,notes:val('tNotes')};
+  state.trips.push(t);saveState();
+  ['tDate','tTime','tDistance','tCargo','tFuel','tNotes'].forEach(id=>document.getElementById(id).value='');
+  renderTrips();
+  alert('✅ تم تسجيل الرحلة');
+}
+function renderTrips(){
+  const opts=state.vehicles.map(v=>`<option value="${v.plate}">${v.plate} - ${v.type}</option>`).join('');
+  document.getElementById('tVehicle').innerHTML=opts;
+
+  let html='<table><thead><tr><th>#</th><th>المركبة</th><th>السائق</th><th>من</th><th>إلى</th><th>التاريخ</th><th>المسافة</th><th>الوقود</th><th>الحمولة</th></tr></thead><tbody>';
+  state.trips.slice().reverse().forEach((t,i)=>{
+    html+=`<tr><td>${i+1}</td><td>${t.vehicle}</td><td>${t.driver}</td><td>${t.from}</td><td>${t.to}</td><td>${t.date||'-'}</td><td>${t.distance} كم</td><td>${t.fuel} لتر</td><td>${t.cargo||'-'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('tripList').innerHTML=state.trips.length?html:'<div class="alert ok">لا توجد رحلات مسجلة</div>';
+}
+
+/* ========================= المدراء ========================= */
+function addManager(){
+  const m={user:val('newMgrUser'),pass:val('newMgrPass'),role:val('newMgrRole'),name:val('newMgrUser')};
+  if(!m.user||!m.pass){alert('الاسم والرمز مطلوبان');return;}
+  state.managers.push(m);saveState();
+  ['newMgrUser','newMgrPass'].forEach(id=>document.getElementById(id).value='');
+  renderManagers();
+}
+function renderManagers(){
+  let html='<table><thead><tr><th>#</th><th>اسم المستخدم</th><th>الاسم</th><th>الصلاحية</th><th>الرمز</th></tr></thead><tbody>';
+  state.managers.forEach((m,i)=>{
+    html+=`<tr><td>${i+1}</td><td><b>${m.user}</b></td><td>${m.name}</td><td><span class="badge info">${m.role}</span></td><td>${m.pass}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('managerList').innerHTML=html;
+}
+
+/* ========================= إكسل ========================= */
+function toSheet(data,sheetName){
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  return wb;
+}
+function exportVehiclesExcel(){
+  const data=state.vehicles.map(v=>({
+    'القسم':v.dept,'النوع':v.type,'رقم اللوحة':v.plate,'رقم المركبة':v.number,
+    'المالك':v.owner,'جهة التسجيل':v.reg,'SOC':v.soc,'السائق':v.driver,
+    'تاريخ البدء':v.validFrom,'تاريخ الانتهاء':v.expiry,'رقم الموظف':v.empNumber
+  }));
+  XLSX.writeFile(toSheet(data,'Vehicles'),'Alataa_Vehicles.xlsx');
+}
+function exportEmployeesExcel(){
+  const data=state.employees.map(e=>({
+    'الاسم':e.name,'رقم الموظف':e.number,'GIN':e.gin,'كلمة المرور':e.password,
+    'الموبايل':e.mobile,'القسم':e.dept,'الوظيفة':e.job,
+    'جواز قيادة':e.drivingNo,'بداية':e.drivingStart,'انتهاء':e.drivingEnd,
+    'جواز سلامة':e.safetyNo,'بداية':e.safetyStart,'انتهاء':e.safetyEnd,
+    'فحص طبي':e.medicalDate,'انتهاء طبي':e.medicalExpiry,'شهادات':e.certificates
+  }));
+  XLSX.writeFile(toSheet(data,'Employees'),'Alataa_Employees.xlsx');
+}
+function exportDriversExcel(){
+  const data=state.drivers.map(d=>({
+    'الاسم':d.name,'رقم الموظف':d.empNo,'الجواز':d.passport,'GIN':d.gin,
+    'الموبايل':d.mobile,'كلمة المرور':d.password
+  }));
+  XLSX.writeFile(toSheet(data,'Drivers'),'Alataa_Drivers.xlsx');
+}
+function exportWarningsExcel(){
+  const data=state.warnings.map(w=>({
+    'السائق':w.driver,'النوع':w.type,'التفاصيل':w.details,'المبلغ':w.amount,'التاريخ':w.date
+  }));
+  XLSX.writeFile(toSheet(data,'Warnings'),'Alataa_Warnings.xlsx');
+}
+function exportTripsExcel(){
+  const data=state.trips.map(t=>({
+    'المركبة':t.vehicle,'السائق':t.driver,'من':t.from,'إلى':t.to,
+    'التاريخ':t.date,'الوقت':t.time,'المسافة':t.distance,'الوقود':t.fuel,
+    'الحمولة':t.cargo,'ملاحظات':t.notes
+  }));
+  XLSX.writeFile(toSheet(data,'Trips'),'Alataa_Trips.xlsx');
+}
+function exportAllExcel(){
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(state.vehicles.map(v=>({القسم:v.dept,النوع:v.type,'رقم اللوحة':v.plate,'رقم المركبة':v.number,المالك:v.owner,'جهة التسجيل':v.reg,SOC:v.soc,السائق:v.driver,'تاريخ البدء':v.validFrom,'تاريخ الانتهاء':v.expiry,'رقم الموظف':v.empNumber}))),'مركبات');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(state.employees.map(e=>({الاسم:e.name,'رقم الموظف':e.number,GIN:e.gin,'كلمة المرور':e.password,الموبايل:e.mobile,القسم:e.dept,الوظيفة:e.job,'جواز قيادة':e.drivingNo,'بداية قيادة':e.drivingStart,'انتهاء قيادة':e.drivingEnd,'جواز سلامة':e.safetyNo,'بداية سلامة':e.safetyStart,'انتهاء سلامة':e.safetyEnd,'فحص طبي':e.medicalDate,'انتهاء طبي':e.medicalExpiry,شهادات:e.certificates}))),'موظفين');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(state.drivers),'سائقين');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(state.warnings),'تنبيهات');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(state.trips),'رحلات');
+  XLSX.writeFile(wb,'Alataa_All_Data.xlsx');
+}
+function importExcel(){
+  const file=document.getElementById('importFile').files[0];
+  if(!file){alert('اختر ملف');return;}
+  const type=document.getElementById('importType').value;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws);
+      let added=0;
+      rows.forEach(row=>{
+        if(type==='vehicles'){
+          state.vehicles.push({id:uid(),
+            plate:row['رقم اللوحة']||row.Plate||row['plate']||'',
+            number:row['رقم المركبة']||row.Number||'',
+            type:row['النوع']||row.Type||'بيك اب',
+            dept:row['القسم']||row.Segment||'ALS',
+            owner:row['المالك']||row.Owner||'Al Alaa',
+            reg:row['جهة التسجيل']||row.Reg||'أربيل',
+            soc:row['SOC']||'Yes',
+            driver:row['السائق']||row.Driver||'',
+            validFrom:row['تاريخ البدء']||row['Valid from']||'',
+            expiry:row['تاريخ الانتهاء']||row['Expiry date']||'',
+            empNumber:row['رقم الموظف']||row['Employee number']||''
+          });
+          added++;
+        }else if(type==='employees'){
+          state.employees.push({id:uid(),
+            name:row['الاسم']||row.Name||'',number:row['رقم الموظف']||row.Number||'',
+            gin:row['GIN']||'',password:row['كلمة المرور']||row.Password||'',
+            mobile:row['الموبايل']||row.Mobile||'',dept:row['القسم']||'ALS',job:row['الوظيفة']||'',
+            drivingNo:row['جواز قيادة']||'',drivingStart:row['بداية قيادة']||'',drivingEnd:row['انتهاء قيادة']||'',
+            safetyNo:row['جواز سلامة']||'',safetyStart:row['بداية سلامة']||'',safetyEnd:row['انتهاء سلامة']||'',
+            medicalDate:row['فحص طبي']||'',medicalExpiry:row['انتهاء طبي']||'',certificates:row['شهادات']||''
+          });
+          added++;
+        }else if(type==='drivers'){
+          state.drivers.push({id:uid(),
+            name:row['الاسم']||row.Name||'',empNo:row['رقم الموظف']||row['Employee number']||'',
+            passport:row['الجواز']||row.Passport||'',gin:row['GIN']||'',
+            mobile:row['الموبايل']||row.Mobile||'',password:row['كلمة المرور']||''
+          });
+          added++;
+        }
+      });
+      saveState();
+      document.getElementById('importMsg').innerHTML=`<div class="alert ok">✅ تم استيراد ${added} سجل بنجاح</div>`;
+      refreshAll();
+    }catch(err){
+      document.getElementById('importMsg').innerHTML=`<div class="alert">❌ فشل الاستيراد: ${err.message}</div>`;
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* ========================= التشغيل التلقائي ========================= */
+(function(){
+  if(sessionStorage.getItem('alataa_session')){
+    enterApp();
+  }
+})();
+</script>
+</body>
+</html>
